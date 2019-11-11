@@ -55,7 +55,7 @@ public class AdminController {
 		// 共享的属性名称 shiroLoginFailure
 		// 共享的 shiro 异常的字节码 类型
 		String shiroLoginFailure = (String) request.getAttribute("shiroLoginFailure");
-		System.out.println("异常类型 ：" + shiroLoginFailure);
+		System.out.println("异常类型 为：" + shiroLoginFailure);
 		if (shiroLoginFailure != null) {
 			if (UnknownAccountException.class.getName().equals(shiroLoginFailure)) {
 				m.addAttribute("erroyMsg", "亲。账号不存在");
