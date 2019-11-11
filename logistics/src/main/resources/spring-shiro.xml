@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:aop="http://www.springframework.org/schema/aop"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/aop http://www.springframework.org/schema/aop/spring-aop-4.3.xsd">
+	<!-- 为springmvc拦截异常 -->
+	<bean class="org.springframework.web.servlet.handler.SimpleMappingExceptionResolver">
+		<property name="exceptionMappings">
+			<props>
+			<!-- 没有权限异常跳转的羊肉面 -->
+				<prop key="org.apache.shiro.authz.UnauthorizedException">unauthorized</prop>
+			</props>
+		</property>
+	</bean>
+	<!-- 开启aop,开启代理类 -->
+	<aop:config proxy-target-class="true"></aop:config>
+	<!-- 开启注解支持 -->
+	<bean class="org.apache.shiro.spring.security.interceptor.AuthorizationAttributeSourceAdvisor">
+		<property name="securityManager" ref="securityManager"></property>
+	</bean>
+	
+	<bean id="myLogoutFilter" class="cn.zz.logistics.shiro.MyLogoutFilter">
+		<property name="redirectUrl" value="/login.jsp"></property>
+	</bean>
+	<bean id="myFormAuthenticationFilter" class="cn.zz.logistics.shiro.MyFormAuthenticationFilter"></bean>
+	<!--  过滤器 -->
+	<bean id="shiroFilter" class="org.apache.shiro.spring.web.ShiroFilterFactoryBean">
+	 	<property name="filters">
+	 		<map>
+	 		<entry key="authc" value-ref="myFormAuthenticationFilter"></entry>
+	 		<entry key="logout" value-ref="myLogoutFilter"></entry>
+	 		</map>
+	 	</property>
+		<!-- 注入安全管理 -->
+		<property name="securityManager" ref="securityManager"/>
+		
+		<!-- 注入登陆页面，如果没有认证，会自动跳转到的页面		 -->
+		<property name="loginUrl" value="/admin/login.do"></property>
+		
+		<property name="successUrl" value="/index.do"></property>
+	
+		
+		<!-- 认证通过没有权限访问的页面 -->
+		<property name="unauthorizedUrl" value="/unauthorized.jsp"></property>
+	<!-- 	设置过滤器的链，顺序从上到下执行 -->
+		<property name="filterChainDefinitions">
+			<value>
+			<!-- 执行静态资源 anon放过 -->
+				/lib/**=anon
+				/static/**= anon
+				/login.jsp=anon
+				/verifyCode.jsp=anon
+			<!-- 	退出登陆过滤器 -->
+				/admin/logout.do=logout
+				<!-- authc所有请求都要通过过滤器才可以访问 -->
+				/**=authc
+			</value>
+		</property>
+	</bean>
+
+
+
+
+	<bean id="securityManager" class="org.apache.shiro.web.mgt.DefaultWebSecurityManager">
+		<property name="realm" ref="myRealm"/>
+		<property name="rememberMeManager" ref="rememberMeManager"></property>
+		<property name="cacheManager" ref="cacheManager"></property>
+		<property name="sessionManager" ref="sessionManager"></property>
+	</bean>
+	<bean id="myRealm" class="cn.zz.logistics.shiro.MyRealm">
+		<property name="credentialsMatcher" ref="credentialsMatcher"></property>
+		
+	</bean>
+	<bean id="credentialsMatcher" class="org.apache.shiro.authc.credential.HashedCredentialsMatcher">
+		<property name="hashIterations" value="3"></property>
+		<property name="hashAlgorithmName" value="md5"></property>
+	
+	</bean>
+	<bean id="rememberMeManager" class="org.apache.shiro.web.mgt.CookieRememberMeManager">
+		<property name="cookie">
+			<bean class="org.apache.shiro.web.servlet.SimpleCookie">
+				<constructor-arg value="rememberMe"></constructor-arg>
+				<property name="maxAge" value="#{3600*24*3}"></property>
+			</bean>
+		</property>
+	</bean>
+	<bean id="cacheManager" class="org.apache.shiro.cache.ehcache.EhCacheManager">
+		<property name="cacheManagerConfigFile" value="classpath:ehcache-shiro.xml"></property>
+	</bean>
+	<bean id="sessionManager" class="org.apache.shiro.web.session.mgt.DefaultWebSessionManager"> 
+	<!-- 	失效时长 -->
+		<property name="globalSessionTimeout" value="#{3600*24*3}"></property>
+		<property name="deleteInvalidSessions" value="true"></property>
+	</bean>
+
+</beans>
+
